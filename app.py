@@ -1,13 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask import Flask, render_template
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
-from twilio.rest import Client
+# from twilio.rest import Client
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import os
 import logging
-
+from send_sms import send_sms
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
@@ -22,10 +22,10 @@ app = Flask(__name__)
 business_info_storage = {}
 
 # Twilio configuration
-twilio_account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-twilio_auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-twilio_phone_number = os.environ.get('TWILIO_PHONE_NUMBER')
-client = Client(twilio_account_sid, twilio_auth_token)
+# twilio_account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+# twilio_auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+# twilio_phone_number = os.environ.get('TWILIO_PHONE_NUMBER')
+# client = Client(twilio_account_sid, twilio_auth_token)
 
 # SendGrid configuration
 sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
@@ -43,9 +43,9 @@ print(RECIPIENT_MAIL)
 print(RECIPIENT_NO)
 print(sendgrid_from_email)
 print(sendgrid_api_key)
-print(twilio_phone_number)
-print(twilio_account_sid)
-print(twilio_auth_token)
+# print(twilio_phone_number)
+# print(twilio_account_sid)
+# print(twilio_auth_token)
 
 def summarize(sentence):
     prompt = f"""I will give you some data from a business card, analyse it..
@@ -73,16 +73,16 @@ def summarize(sentence):
     logging.error("Summarisation failed, response blocked or invalid.")
     return "summarisation failed, response blocked or invalid."
 
-def send_sms(message, to_phone_number):
-    try:
-        client.messages.create(
-            body=message,
-            from_=twilio_phone_number,
-            to=to_phone_number
-        )
-        logging.info(f"SMS sent to {to_phone_number}")
-    except Exception as e:
-        logging.error(f"Failed to send SMS: {e}")
+# def send_sms(message, to_phone_number):
+#     try:
+#         client.messages.create(
+#             body=message,
+#             from_=twilio_phone_number,
+#             to=to_phone_number
+#         )
+#         logging.info(f"SMS sent to {to_phone_number}")
+#     except Exception as e:
+#         logging.error(f"Failed to send SMS: {e}")
 
 def send_email(subject, html_content, to_email):
     try:
@@ -145,6 +145,25 @@ def get_business_info(business_id):
 
 print(business_info_storage)
 
+# Africa's talking messaging API
+#TODO: create incoming messages route
+@app.route('/incoming-messages', methods=['POST'])
+def incoming_messages():
+   data = request.get_json(force=True)
+   print(f'Incoming message...\n ${data}')
+   return Response(status=200)
 
-# if __name__ == '__main__':
-#     app.run(debug=True, host='0.0.0.0', port=5000)
+
+#TODO: create delivery reports route.
+@app.route('/delivery-reports', methods=['POST'])
+def delivery_reports():
+   data = request.get_json(force=True)
+   print(f'Delivery report response...\n ${data}')
+   return Response(status=200)
+
+# end africa's talking APIs
+
+
+if __name__ == '__main__':
+    send_sms().send()
+    app.run(debug=True, host='0.0.0.0', port=5000)
